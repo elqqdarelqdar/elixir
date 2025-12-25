@@ -3,92 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fast Voice Elixir</title>
+    <title>Голосовой Мост</title>
     <style>
         body { 
-            background: #000; color: #0f0; font-family: sans-serif; 
-            margin: 0; display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; height: 100vh; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            background-color: #f0f2f5; 
         }
-        #elixir { font-size: 10rem; font-weight: bold; }
-        #status { font-size: 1.2rem; color: #555; }
-        #timer { font-size: 1.5rem; color: #aaa; margin-bottom: 20px; }
+        .card { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            width: 100%; 
+            max-width: 400px; 
+            text-align: center; 
+        }
+        h2 { color: #333; margin-bottom: 20px; }
+        input { 
+            width: 100%; 
+            padding: 15px; 
+            margin-bottom: 20px; 
+            border: 2px solid #ddd; 
+            border-radius: 10px; 
+            font-size: 18px; 
+            box-sizing: border-box; 
+            outline: none;
+        }
+        input:focus { border-color: #007bff; }
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            background-color: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            font-size: 18px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: background 0.3s;
+        }
+        button:active { background-color: #0056b3; transform: scale(0.98); }
+        #status { margin-top: 20px; color: #666; font-size: 14px; }
+        .hint { font-size: 12px; color: #999; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <div id="timer">00:00 (x1)</div>
-    <div id="elixir">5.0</div>
-    <div id="status">Жду голос...</div>
 
-    <script>
-        let count = 5.0;
-        let rate = 1;
-        let seconds = 0;
-        const display = document.getElementById('elixir');
-        const timerDisplay = document.getElementById('timer');
+<div class="card">
+    <h2>Голосовой Мост</h2>
+    <input type="text" id="textInput" placeholder="Введите текст...">
+    <button id="sendBtn">Озвучить на ноутбуке</button>
+    <div id="status">Статус: Готов к работе</div>
+    <p class="hint">На ноутбуке нужно кликнуть по странице один раз, чтобы разрешить звук.</p>
+</div>
 
-        // Таймер боя и авто-прирост
-        setInterval(() => {
-            seconds++;
-            if (seconds === 120) rate = 2; // x2 через 2 мин
-            if (seconds === 210) rate = 3; // x3 через 3.5 мин
-            
-            let m = Math.floor(seconds / 60);
-            let s = seconds % 60;
-            timerDisplay.innerText = `${m}:${s < 10 ? '0'+s : s} (x${rate})`;
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-            if (count < 10) {
-                count += (0.35 * rate) / 10;
-                if (count > 10) count = 10;
-                updateDisplay();
-            }
-        }, 100);
+    // Ваши данные Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyDmTMjCF4_I62hhT84EdINkJ-1n2qQMayk",
+        authDomain: "elqq-6ead2.firebaseapp.com",
+        projectId: "elqq-6ead2",
+        storageBucket: "elqq-6ead2.firebasestorage.app",
+        messagingSenderId: "246744402864",
+        appId: "1:246744402864:web:ddaa935729fe7a66cca475",
+        measurementId: "G-J92J1HFVMC",
+        databaseURL: "https://elqq-6ead2-default-rtdb.firebaseio.com" // Я добавил стандартный URL для вашего ID
+    };
 
-        function updateDisplay() {
-            display.innerText = count.toFixed(1);
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const msgRef = ref(db, 'voice_command');
+
+    const input = document.getElementById('textInput');
+    const btn = document.getElementById('sendBtn');
+    const status = document.getElementById('status');
+
+    // ОТПРАВКА (когда вы на телефоне)
+    btn.addEventListener('click', () => {
+        const text = input.value.trim();
+        if (text) {
+            set(msgRef, {
+                text: text,
+                timestamp: Date.now()
+            });
+            input.value = '';
+            status.innerText = "✅ Отправлено!";
+            setTimeout(() => { status.innerText = "Статус: Готов"; }, 2000);
         }
+    });
 
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'ru-RU';
-        recognition.continuous = true;
-        
-        // КЛЮЧЕВОЙ ПАРАМЕТР ДЛЯ СКОРОСТИ:
-        recognition.interimResults = true; 
+    // ПРИЕМ И ОЗВУЧКА (когда открыто на ноутбуке)
+    let lastTimestamp = Date.now(); 
+    onValue(msgRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data && data.timestamp > lastTimestamp) {
+            lastTimestamp = data.timestamp;
+            status.innerText = "📢 Озвучиваю: " + data.text;
+            
+            const utterance = new SpeechSynthesisUtterance(data.text);
+            utterance.lang = 'ru-RU';
+            window.speechSynthesis.speak(utterance);
+        }
+    });
+</script>
 
-        const numbersMap = {
-            'раз':1,'один':1,'два':2,'три':3,'четыре':4,'пять':5,
-            'шесть':6,'семь':7,'восемь':8,'девять':9,'десять':10
-        };
-
-        recognition.onresult = (event) => {
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal || event.results[i][0].confidence > 0.3) {
-                    const text = event.results[i][0].transcript.toLowerCase();
-                    document.getElementById('status').innerText = text;
-
-                    for (let word in numbersMap) {
-                        if (text.includes(word)) {
-                            count -= numbersMap[word];
-                            if (count < 0) count = 0;
-                            updateDisplay();
-                            // Очищаем результат, чтобы не вычесть дважды
-                            recognition.stop(); 
-                            return;
-                        }
-                    }
-                }
-            }
-        };
-
-        recognition.onend = () => recognition.start();
-        recognition.start();
-
-        // Сброс при тапе
-        document.body.onclick = () => {
-            count = 5.0; seconds = 0; rate = 1;
-            updateDisplay();
-        };
-    </script>
 </body>
 </html>
