@@ -3,50 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Elixir</title>
+    <title>Fast Voice Elixir</title>
     <style>
         body { 
-            background: rgba(0, 0, 0, 0.8); 
-            color: #ff00ff; 
-            font-family: 'Arial', sans-serif; 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            overflow: hidden;
+            background: #000; color: #0f0; font-family: sans-serif; 
+            margin: 0; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; height: 100vh; 
         }
-        #elixir { 
-            font-size: 8rem; 
-            font-weight: bold; 
-            text-shadow: 0 0 20px #ff00ff;
-        }
-        #status { 
-            font-size: 1rem; 
-            color: #00ff00; 
-            margin-top: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        .recording { animation: blink 1.5s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        #elixir { font-size: 10rem; font-weight: bold; }
+        #status { font-size: 1.2rem; color: #555; }
+        #timer { font-size: 1.5rem; color: #aaa; margin-bottom: 20px; }
     </style>
 </head>
 <body>
-
+    <div id="timer">00:00 (x1)</div>
     <div id="elixir">5.0</div>
-    <div id="status" class="recording">● Слушаю...</div>
+    <div id="status">Жду голос...</div>
 
     <script>
         let count = 5.0;
-        const baseSpeed = 0.35; // Скорость накопления x1
+        let rate = 1;
+        let seconds = 0;
         const display = document.getElementById('elixir');
+        const timerDisplay = document.getElementById('timer');
 
-        // Авто-прирост эликсира
+        // Таймер боя и авто-прирост
         setInterval(() => {
+            seconds++;
+            if (seconds === 120) rate = 2; // x2 через 2 мин
+            if (seconds === 210) rate = 3; // x3 через 3.5 мин
+            
+            let m = Math.floor(seconds / 60);
+            let s = seconds % 60;
+            timerDisplay.innerText = `${m}:${s < 10 ? '0'+s : s} (x${rate})`;
+
             if (count < 10) {
-                count += baseSpeed / 10;
+                count += (0.35 * rate) / 10;
                 if (count > 10) count = 10;
                 updateDisplay();
             }
@@ -56,44 +48,45 @@
             display.innerText = count.toFixed(1);
         }
 
-        // Распознавание голоса
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            alert("Ваш браузер не поддерживает распознавание голоса. Используйте Chrome на Android.");
-        } else {
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'ru-RU';
-            recognition.continuous = true;
-            recognition.interimResults = false;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'ru-RU';
+        recognition.continuous = true;
+        
+        // КЛЮЧЕВОЙ ПАРАМЕТР ДЛЯ СКОРОСТИ:
+        recognition.interimResults = true; 
 
-            const numbersMap = {
-                'один': 1, 'раз': 1, 'два': 2, 'три': 3, 'четыре': 4, 
-                'пять': 5, 'шесть': 6, 'семь': 7, 'восемь': 8, 'девять': 9, 'десять': 10
-            };
+        const numbersMap = {
+            'раз':1,'один':1,'два':2,'три':3,'четыре':4,'пять':5,
+            'шесть':6,'семь':7,'восемь':8,'девять':9,'десять':10
+        };
 
-            recognition.onresult = (event) => {
-                const lastResult = event.results[event.results.length - 1][0].transcript.toLowerCase();
-                console.log('Слышу:', lastResult);
+        recognition.onresult = (event) => {
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal || event.results[i][0].confidence > 0.3) {
+                    const text = event.results[i][0].transcript.toLowerCase();
+                    document.getElementById('status').innerText = text;
 
-                // Ищем цифры в сказанной фразе
-                for (let word in numbersMap) {
-                    if (lastResult.includes(word)) {
-                        count -= numbersMap[word];
-                        if (count < 0) count = 0;
-                        updateDisplay();
-                        break; 
+                    for (let word in numbersMap) {
+                        if (text.includes(word)) {
+                            count -= numbersMap[word];
+                            if (count < 0) count = 0;
+                            updateDisplay();
+                            // Очищаем результат, чтобы не вычесть дважды
+                            recognition.stop(); 
+                            return;
+                        }
                     }
                 }
-            };
+            }
+        };
 
-            // Авто-перезапуск если микрофон отключится
-            recognition.onend = () => recognition.start();
-            recognition.start();
-        }
+        recognition.onend = () => recognition.start();
+        recognition.start();
 
-        // Клик по экрану для сброса (начало боя)
+        // Сброс при тапе
         document.body.onclick = () => {
-            count = 5.0;
+            count = 5.0; seconds = 0; rate = 1;
             updateDisplay();
         };
     </script>
