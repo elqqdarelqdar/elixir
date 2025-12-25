@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CR Elixir Counter</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #222; color: white; margin: 0; }
+        .elixir-display { font-size: 5rem; font-weight: bold; color: #f0f; margin: 20px 0; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; }
+        button { padding: 20px; font-size: 1.5rem; border: none; border-radius: 10px; cursor: pointer; }
+        .minus { background: #e74c3c; color: white; }
+        .reset { background: #3498db; color: white; width: 90%; margin-top: 20px; }
+        .speed-btn { background: #f1c40f; color: black; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="elixir-display" id="elixir-count">5.0</div>
+    <div id="rate-display">Скорость: x1</div>
+
+    <div class="grid">
+        <button class="minus" onclick="spend(1)">-1</button>
+        <button class="minus" onclick="spend(2)">-2</button>
+        <button class="minus" onclick="spend(3)">-3</button>
+        <button class="minus" onclick="spend(4)">-4</button>
+        <button class="minus" onclick="spend(5)">-5</button>
+        <button class="minus" onclick="spend(6)">-6</button>
+        <button class="minus" onclick="spend(7)">-7</button>
+        <button class="minus" onclick="spend(8)">-8</button>
+        <button class="minus" onclick="spend(9)">-9</button>
+    </div>
+
+    <button class="speed-btn" onclick="toggleSpeed()">Сменить скорость (x1/x2/x3)</button>
+    <button class="reset" onclick="reset()">Сброс (Начало боя)</button>
+
+    <script>
+        let elixir = 5.0;
+        let rate = 1; // x1, x2 или x3
+        const baseSpeed = 0.35; // Примерно столько эликсира в секунду при x1
+
+        setInterval(() => {
+            if (elixir < 10) {
+                elixir += (baseSpeed * rate) / 10;
+                if (elixir > 10) elixir = 10;
+                updateDisplay();
+            }
+        }, 100);
+
+        function spend(amount) {
+            elixir -= amount;
+            if (elixir < 0) elixir = 0;
+            updateDisplay();
+        }
+
+        function toggleSpeed() {
+            if (rate === 1) rate = 2;
+            else if (rate === 2) rate = 3;
+            else rate = 1;
+            document.getElementById('rate-display').innerText = `Скорость: x${rate}`;
+        }
+
+        function reset() {
+            elixir = 5.0;
+            rate = 1;
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            document.getElementById('elixir-count').innerText = elixir.toFixed(1);
+        }
+    </script>
+</body>
+</html>
