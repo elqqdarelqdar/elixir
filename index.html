@@ -2,118 +2,19 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Голосовой Мост</title>
-    <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0; 
-            background-color: #f0f2f5; 
-        }
-        .card { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 20px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-            width: 100%; 
-            max-width: 400px; 
-            text-align: center; 
-        }
-        h2 { color: #333; margin-bottom: 20px; }
-        input { 
-            width: 100%; 
-            padding: 15px; 
-            margin-bottom: 20px; 
-            border: 2px solid #ddd; 
-            border-radius: 10px; 
-            font-size: 18px; 
-            box-sizing: border-box; 
-            outline: none;
-        }
-        input:focus { border-color: #007bff; }
-        button { 
-            width: 100%; 
-            padding: 15px; 
-            background-color: #007bff; 
-            color: white; 
-            border: none; 
-            border-radius: 10px; 
-            font-size: 18px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            transition: background 0.3s;
-        }
-        button:active { background-color: #0056b3; transform: scale(0.98); }
-        #status { margin-top: 20px; color: #666; font-size: 14px; }
-        .hint { font-size: 12px; color: #999; margin-top: 10px; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CR Meta App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <header>
+        <h1>ТОП КОЛОДЫ МЕТЫ</h1>
+        <p>Декабрь 2025 • Обновлено</p>
+    </header>
 
-<div class="card">
-    <h2>Голосовой Мост</h2>
-    <input type="text" id="textInput" placeholder="Введите текст...">
-    <button id="sendBtn">Озвучить на ноутбуке</button>
-    <div id="status">Статус: Готов к работе</div>
-    <p class="hint">На ноутбуке нужно кликнуть по странице один раз, чтобы разрешить звук.</p>
-</div>
+    <div id="deck-list" class="container"></div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-    // Ваши данные Firebase
-    const firebaseConfig = {
-        apiKey: "AIzaSyDmTMjCF4_I62hhT84EdINkJ-1n2qQMayk",
-        authDomain: "elqq-6ead2.firebaseapp.com",
-        projectId: "elqq-6ead2",
-        storageBucket: "elqq-6ead2.firebasestorage.app",
-        messagingSenderId: "246744402864",
-        appId: "1:246744402864:web:ddaa935729fe7a66cca475",
-        measurementId: "G-J92J1HFVMC",
-        databaseURL: "https://elqq-6ead2-default-rtdb.firebaseio.com" // Я добавил стандартный URL для вашего ID
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const msgRef = ref(db, 'voice_command');
-
-    const input = document.getElementById('textInput');
-    const btn = document.getElementById('sendBtn');
-    const status = document.getElementById('status');
-
-    // ОТПРАВКА (когда вы на телефоне)
-    btn.addEventListener('click', () => {
-        const text = input.value.trim();
-        if (text) {
-            set(msgRef, {
-                text: text,
-                timestamp: Date.now()
-            });
-            input.value = '';
-            status.innerText = "✅ Отправлено!";
-            setTimeout(() => { status.innerText = "Статус: Готов"; }, 2000);
-        }
-    });
-
-    // ПРИЕМ И ОЗВУЧКА (когда открыто на ноутбуке)
-    let lastTimestamp = Date.now(); 
-    onValue(msgRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data && data.timestamp > lastTimestamp) {
-            lastTimestamp = data.timestamp;
-            status.innerText = "📢 Озвучиваю: " + data.text;
-            
-            const utterance = new SpeechSynthesisUtterance(data.text);
-            utterance.lang = 'ru-RU';
-            window.speechSynthesis.speak(utterance);
-        }
-    });
-</script>
-
+    <script src="script.js"></script>
 </body>
 </html>
